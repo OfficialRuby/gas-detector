@@ -3,20 +3,24 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include <SPI.h>
-//#include <Fonts/user/OswaldVariable8pt7b.h> // User a custom font
-//#include <Fonts/user/UbuntuLightItalic9pt7b.h> // User a custom font
-//#include <Fonts/user/UbuntuRegular8pt7b.h> // User a custom font
+//#include <Fonts/user/OswaldVariable8pt7b.h> // Use a custom font
+//#include <Fonts/user/UbuntuLightItalic9pt7b.h> // Use a custom font
+//#include <Fonts/user/UbuntuRegular8pt7b.h> // Use a custom font
 
 // Variable definitions
 int sensorValue;
-const size_t maxValue =4;
-char oldSensorValue[maxValue] = {0};
-
+int maxValue =4;
+char oldSensorValue[4] = {0};
+int threshold =300;
+int toneDuration = 100;
+int toneFrequency = 1200;
 
 // Pin definitions
 #define sensorPin A0
-
-
+int buzzerPin = 6;
+#define redLED A1
+#define greenLED A2
+#define blueLED A3
 
 // color definitions
 const uint16_t  Black        = 0x0000;
@@ -41,18 +45,27 @@ const uint16_t  White        = 0xFFFF;
 
   void setup()
   {
+    pinMode(redLED, OUTPUT);
+    pinMode(greenLED, OUTPUT);
+    pinMode(blueLED, OUTPUT);
+    pinMode(buzzerPin, OUTPUT);
+    
     // Init ST7735R chip, green tab
-
     tft.initR(INITR_144GREENTAB); 
 
     // initialise the display
-    
     tft.setFont();
     tft.fillScreen(Red);
     tft.setTextColor(White);
     Serial.begin(9600);
 
 
+  }
+
+  //Function to activate the buzzer 
+  void raiseAlarm()
+  {
+    tone(buzzerPin, toneFrequency, toneDuration);
   }
 
   void loop()
@@ -65,17 +78,10 @@ const uint16_t  White        = 0xFFFF;
     tft.setCursor(15,40);
     tft.print("Sensor Value:");
 
-
    readSensorValue();
 
-
-
-
-    
-   
-
   }
-
+  
 
   void readSensorValue()
   {
@@ -85,8 +91,6 @@ const uint16_t  White        = 0xFFFF;
      *  Value by a copy of it with the background color as display color
      */
 
-
-
     
     //Read the current sensor value
     sensorValue = analogRead(sensorPin);
@@ -95,7 +99,7 @@ const uint16_t  White        = 0xFFFF;
     char newSensorValue[maxValue] = {0};
     // Construct the new sensor value
      sprintf(newSensorValue, "%d", sensorValue);
-     
+     // Compare the two strings to see if it has changed
     if (strcmp (oldSensorValue,newSensorValue) != 0)
     {
       // Change the text size
@@ -117,4 +121,23 @@ const uint16_t  White        = 0xFFFF;
       strcpy(oldSensorValue,newSensorValue); 
       delay(1000);
     } 
+
+    if (sensorValue >= threshold) 
+    {            
+      // LED blinks twice
+      digitalWrite(redLED, HIGH);
+      delay(150);
+      digitalWrite(redLED, LOW);
+      delay(150);
+      digitalWrite(redLED, HIGH);
+      delay(150);
+      digitalWrite(redLED, LOW);
+      // Play the alarm sound      
+      raiseAlarm();
+    }
+     else {
+    // Don't trigger the alarm
+    noTone(buzzerPin);
+
+    }  
   }
